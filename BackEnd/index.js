@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require("cors");
+const bcrypt = require("bcrypt");
 const app = express();
 const {User} = require("./database/mongo.js");
 const PORT = 4000;
@@ -20,14 +21,12 @@ app.listen(PORT);
 
 async function signup(req,res) {
     const body = req.body;
-    console.log("body:", body);
     const email = req.body.email;
     const password = req.body.password;
     //Finding already existing users so we don't sign them up multiple times
     const userInDb = await User.findOne({
         email: email
     });
-    console.log("userInDb:", userInDb);
     if (userInDb != null) {
         res.status(400).send("Email already exists");
         return;
@@ -45,23 +44,21 @@ async function signup(req,res) {
         res.status(500).send("Something went wrong");
         return;
     }
-    console.log("users:", users);
     res.send("sign up");
 }
 
-function login(req,res) {
+async function login(req,res) {
     const body = req.body;
-    console.log("body:", body);
-    console.log("users in db:", users);
-
-    const userInDb = users.find((user) => user.email === body.email);
+    const userInDb = await User.findOne({
+        email: body.email
+    });
     if (userInDb == null) {
         res.status(401).send("Wrong credentials");
         return;
     }
 
     const passwordInDb = userInDb.password;
-    if (passwordInDb != body.password) {
+    if (!isPasswordCorrect(req.body.password, passwordInDb)) {
         res.status(401).send("Wrong credentials");
         return;
     }
@@ -75,7 +72,17 @@ function login(req,res) {
         return;
     }
     res.send({
-        userId: "123",
+        userId: userInDb._id,
         token: "token"
     });
+}
+
+function hashPassword(password) {
+    const salt = bcrypt.genSaltSync(10);
+    const hash = bcrypt.hashSync(password, salt);
+    return hash;
+}
+
+function isPasswordCorrect(password, hash) {
+    return bcrypt.compareSync(password, hash);
 }

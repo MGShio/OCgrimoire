@@ -1,7 +1,6 @@
+require("dotenv").config();
 const mongoose = require('mongoose');
-const PASSWORD = "123Toxo321";
-const USER = "Shioiro";
-const DB_URL = 'mongodb+srv://${USER}:${PASSWORD}@ocgrimoire.gslevfu.mongodb.net/?retryWrites=true&w=majority&appName=OCgrimoire'
+const DB_URL = 'mongodb+srv://${process.env.USER}:${process.env.PASSWORD}@${process.env.DB_DOMAIN}';
 
 async function connect() {
     try {
