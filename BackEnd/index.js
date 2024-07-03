@@ -16,65 +16,64 @@ function sayHi(req, res) {
 app.get('/', sayHi);
 app.post("/api/auth/signup", signup);
 app.post("/api/auth/login", login);
+app.get("/api/books", getBooks);
 
 app.listen(PORT);
 
-async function signup(req,res) {
-    const body = req.body;
-    const email = req.body.email;
-    const password = req.body.password;
-    //Finding already existing users so we don't sign them up multiple times
-    const userInDb = await User.findOne({
-        email: email
-    });
-    if (userInDb != null) {
-        res.status(400).send("Email already exists");
-        return;
+async function signup(req, res) {
+    const { email, password } = req.body;
+
+    // Finding already existing users so we don't sign them up multiple times
+    const userInDb = await User.findOne({ email });
+
+    if (userInDb) {
+        return res.status(400).send("Email already exists");
     }
-    //Creating a new user
-    const user = {
+
+    // Hash the password before saving it
+    const hashedPassword = hashPassword(password);
+
+    // Create a new user object with hashed password
+    const newUser = new User({
         email: email,
-        password: password,
-    };
-    // users.push(user);
+        password: hashedPassword,
+    });
+
     try {
-        await User.create(user);
-    } catch(error) {
+        await newUser.save();
+        res.send("sign up successful");
+    } catch (error) {
         console.error(error);
         res.status(500).send("Something went wrong");
-        return;
     }
-    res.send("sign up");
 }
 
-async function login(req,res) {
-    const body = req.body;
-    const userInDb = await User.findOne({
-        email: body.email
-    });
-    if (userInDb == null) {
-        res.status(401).send("Wrong credentials");
-        return;
-    }
+async function login(req, res) {
+    const { email, password } = req.body;
 
-    const passwordInDb = userInDb.password;
-    if (!isPasswordCorrect(req.body.password, passwordInDb)) {
-        res.status(401).send("Wrong credentials");
-        return;
-    }
+    try {
+        const userInDb = await User.findOne({ email });
 
-    if (body.email != "email") {
-        res.status(401).send("Wrong credentials");
-        return;
+        if (!userInDb) {
+            return res.status(401).send("Wrong credentials");
+        }
+
+        const isPasswordValid = isPasswordCorrect(password, userInDb.password);
+
+        if (!isPasswordValid) {
+            return res.status(401).send("Wrong credentials");
+        }
+
+        // If you reach here, credentials are correct
+        res.send({
+            userId: userInDb._id,
+            token: "generated_token_here" // Generate a real token for authentication
+        });
+
+    } catch (error) {
+        console.error('Error during login:', error);
+        res.status(500).send("Something went wrong");
     }
-    if (body.password != "password") {
-        res.status(401).send("Wrong credentials");
-        return;
-    }
-    res.send({
-        userId: userInDb._id,
-        token: "token"
-    });
 }
 
 function hashPassword(password) {
@@ -86,3 +85,4 @@ function hashPassword(password) {
 function isPasswordCorrect(password, hash) {
     return bcrypt.compareSync(password, hash);
 }
+

@@ -1,14 +1,14 @@
 require("dotenv").config();
 const mongoose = require('mongoose');
-const DB_URL = 'mongodb+srv://${process.env.USER}:${process.env.PASSWORD}@${process.env.DB_DOMAIN}';
+const DB_URL = `mongodb+srv://${process.env.USER}:${process.env.PASSWORD}@${process.env.DB_DOMAIN}/?retryWrites=true&w=majority&appName=OCgrimoire`;
 
 async function connect() {
     try {
-        await mongoose.connect(DB_URL);
+        await mongoose.connect(DB_URL)
     console.log("Connected to DB");
     }
     catch (error) {
-        console.error(error);
+        console.error("Error connecting to DB:", error);
     }
 }
 connect();
@@ -21,5 +21,3 @@ const UserSchema = new mongoose.Schema({
 const User = mongoose.model("User", UserSchema);
 
 module.exports = {User};
-
-
