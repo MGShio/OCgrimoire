@@ -132,20 +132,14 @@ export async function addBook(data) {
   bodyFormData.append('image', data.file[0]);
 
   try {
-    const response = await axios({
+    return await axios({
       method: 'post',
       url: `${API_ROUTES.BOOKS}`,
       data: bodyFormData,
       headers: {
         Authorization: `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'multipart/form-data',
       },
     });
-    if (response.status === 200) {
-      return response.data;
-    } else {
-      throw new Error(response.message);
-    }
   } catch (err) {
     console.error(err);
     return { error: true, message: err.message };
