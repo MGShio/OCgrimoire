@@ -1,21 +1,23 @@
-const multer = require("multer");
+const multer = require('multer'); // Import multer for handling file uploads
+const path = require('path'); // Import path for handling and transforming file paths
 
-// Multer disk storage configuration
+// Use the IMAGES_FOLDER environment variable or default to 'public/images' if not set
+const imagesFolder = process.env.IMAGES_FOLDER || 'public/images';
+
 const storage = multer.diskStorage({
-  // Destination function determines where to store uploaded files
+  // Set the destination directory for uploaded files
   destination: function (req, file, cb) {
-    cb(null, String(process.env.IMAGES_FOLDER)); // Store files in specified folder (from environment variable)
+    cb(null, path.resolve(imagesFolder)); // Resolve the path to avoid issues with relative paths
   },
-  // Filename function determines the name of uploaded files
+  // Set the filename for the uploaded file
   filename: function (req, file, cb) {
-    const fileName = file.originalname.toLowerCase() + Date.now() + ".jpg"; // Generate unique filename with original name and timestamp
-    cb(null, fileName); // Callback with generated filename
+    // Generate a unique filename using the original name, current timestamp, and file extension
+    const fileName = file.originalname.toLowerCase().split(' ').join('_') + Date.now() + path.extname(file.originalname);
+    cb(null, fileName); // Pass the filename to the callback
   }
 });
 
-// Multer upload configuration using the defined storage
-const upload = multer({
-  storage // Use the configured storage for file uploads
-});
+// Create an upload middleware using the defined storage configuration
+const upload = multer({ storage });
 
-module.exports = { upload }; // Export the configured multer upload instance
+module.exports = { upload }; // Export the upload middleware for use in other parts of the application
