@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 // Define the schema for the Book model
 const BookSchema = new mongoose.Schema({
@@ -16,6 +16,6 @@ const BookSchema = new mongoose.Schema({
 });
 
 // Create a mongoose model for the Book schema
-const Book = mongoose.model("Book", BookSchema);
+const Book = mongoose.model('Book', BookSchema);
 
 module.exports = { Book }; // Export the Book model
