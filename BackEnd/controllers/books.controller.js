@@ -1,5 +1,6 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const fs = require('fs');
 const { upload } = require('../middlewares/multer');
 const { Book } = require('../models/Book');
 
@@ -14,36 +15,43 @@ booksRouter.post('/:id/rating', checkToken, postRating);
 
 async function postRating(req, res) {
   const id = req.params.id;
-  if (id == null || id === 'undefined') {
-    res.status(400).send('Book id is missing');
-    return;
+  if (!id) {
+    return res.status(400).json({ error: 'Book id is missing' });
   }
+
   const rating = req.body.rating;
   const userId = req.tokenPayload.userId;
+
   try {
+    // Find the book by ID
     const book = await Book.findById(id);
-    if (book == null) {
-      res.status(404).send('Book not found');
-      return;
+    if (!book) {
+      return res.status(404).json({ error: 'Book not found' });
     }
-    const ratingsInDb = book.ratings;
-    const previousRatingFromCurrentUser = ratingsInDb.find((rating) => rating.userId == userId);
-    if (previousRatingFromCurrentUser != null) {
-      res.status(400).send('You have already rated this book');
-      return;
+
+    // Check if the user has already rated the book
+    const existingRating = book.ratings.find((r) => r.userId === userId);
+    if (existingRating) {
+      return res.status(400).json({ error: 'You have already rated this book' });
     }
-    const newRating = { userId, grade: rating };
-    ratingsInDb.push(newRating);
-    book.averageRating = calculateAverageRating(ratingsInDb);
+
+    // Add the new rating
+    book.ratings.push({ userId, grade: rating });
+    // Recalculate the average rating
+    book.averageRating = calculateAverageRating(book.ratings);
+    // Save the updated book
     await book.save();
-    res.send('Rating posted');
+    console.log('Updated book:', book);
+    // Return the updated book object
+    return res.status(200).json(book);
   } catch (e) {
     console.error(e);
-    res.status(500).send('Something went wrong:' + e.message);
+    return res.status(500).json({ error: 'Something went wrong:' + e.message });
   }
 }
 
 function calculateAverageRating(ratings) {
+  if (ratings.length === 0) return 0;
   const sumOfAllGrades = ratings.reduce((sum, rating) => sum + rating.grade, 0);
   return sumOfAllGrades / ratings.length;
 }
@@ -62,7 +70,11 @@ async function getBestRating(req, res) {
 }
 
 async function putBook(req, res) {
-  const id = req.params.id;
+    const id = req.params.id;
+    if (!req.body || !req.body.book) {
+      res.status(400).send('Request body is missing or invalid');
+      return;
+    }
   const book = JSON.parse(req.body.book);
   try {
     const bookInDb = await Book.findById(id);
@@ -146,6 +158,7 @@ async function getBookById(req, res) {
       return;
     }
     book.imageUrl = getAbsoluteImagePath(book.imageUrl);
+    console.log('Fetched Book:', book);
     res.send(book);
   } catch (e) {
     console.error(e);
